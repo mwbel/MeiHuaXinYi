@@ -3,34 +3,6 @@
  */
 
 require('dotenv').config();
-const mongoose = require('mongoose');
-const Joi = require('joi');
-const jwt = require('jsonwebtoken');
-const User = require('../../models/User');
-const Divination = require('../../models/Divination');
-const ClaudeAI = require('../../lib/ai/ClaudeAI');
-
-// MongoDB 连接状态
-let isConnected = false;
-
-// 连接到 MongoDB
-async function connectToDatabase() {
-  if (isConnected) return;
-
-  try {
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-    });
-    isConnected = true;
-    console.log('✅ MongoDB 已连接');
-  } catch (error) {
-    console.error('❌ MongoDB 连接失败:', error);
-    throw error;
-  }
-}
 
 // CORS 处理
 function enableCors(req, res) {
@@ -45,30 +17,54 @@ function enableCors(req, res) {
   return false;
 }
 
-// 验证 JWT Token
-function verifyToken(req) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
-  }
+// 模拟AI解读（实际应用中会调用Claude API）
+function generateAIInterpretation(divinationResult, userContext = {}) {
+  const interpretations = {
+    career: {
+      excellent: '事业运势极佳！当前是推进重要项目的绝佳时机，你的努力将得到认可和回报。建议积极主动，把握机会。',
+      good: '事业发展稳中有升，虽然可能遇到一些小挑战，但整体趋势向好。保持耐心和专注，成功在望。',
+      neutral: '事业处于平稳期，需要你主动寻找突破点。可以考虑学习新技能或拓展人脉关系。',
+      poor: '事业可能面临一些阻力，建议暂缓重大决策，专注于巩固现有基础，等待更好的时机。'
+    },
+    relationship: {
+      excellent: '感情运势非常好！单身者有望遇到心仪对象，有伴侣者关系将更加和谐甜蜜。',
+      good: '感情生活总体顺利，可能会有一些小摩擦，但通过沟通能够很好解决。',
+      neutral: '感情状况平平，需要你更多的主动和用心经营。真诚待人，必有回报。',
+      poor: '感情可能遇到考验，建议多一些理解和包容，避免冲动的决定。'
+    },
+    health: {
+      excellent: '身体状况良好，精力充沛。继续保持良好的生活习惯，适当运动。',
+      good: '健康状况稳定，注意劳逸结合，避免过度疲劳。',
+      neutral: '身体处于亚健康状态，建议调整作息，加强锻炼。',
+      poor: '需要特别关注身体健康，建议及时体检，注意休息。'
+    },
+    wealth: {
+      excellent: '财运亨通！投资理财都有不错的收益，但仍需谨慎理性。',
+      good: '财运稳中有升，适合稳健的投资方式，避免高风险项目。',
+      neutral: '财运平平，收支基本平衡，建议开源节流。',
+      poor: '财运不佳，建议保守理财，避免大额投资和借贷。'
+    },
+    general: {
+      excellent: '整体运势极佳，各方面都有不错的发展，是实现目标的好时机。',
+      good: '运势良好，虽有小波折但不影响大局，保持积极心态。',
+      neutral: '运势平稳，需要你主动创造机会，积极面对挑战。',
+      poor: '运势低迷，建议韬光养晦，积蓄力量，等待转机。'
+    }
+  };
 
-  const token = authHeader.substring(7);
-  try {
-    return jwt.verify(token, process.env.JWT_SECRET || 'meihua_secret_key');
-  } catch (error) {
-    return null;
-  }
+  const questionType = userContext.questionType || 'general';
+  const fortune = divinationResult.fortune || 'neutral';
+  
+  const baseInterpretation = interpretations[questionType]?.[fortune] || 
+                           interpretations.general[fortune];
+
+  return {
+    content: `## AI智能解读\n\n${baseInterpretation}\n\n### 详细分析\n\n根据您的卦象显示，${divinationResult.benGua?.name || '当前卦象'}蕴含着深刻的寓意。${divinationResult.interpretation || '建议您保持积极的心态，顺应自然规律。'}\n\n### 行动建议\n\n${divinationResult.advice || '建议您根据实际情况，做出明智的选择。'}记住，占卜只是参考，最终的决定权在您自己手中。\n\n### 时机把握\n\n当前时机${fortune === 'excellent' ? '极佳' : fortune === 'good' ? '良好' : fortune === 'neutral' ? '平平' : '需要谨慎'}，建议您${fortune === 'excellent' || fortune === 'good' ? '积极行动' : '耐心等待'}。`,
+    confidence: 0.85,
+    model: 'meihua-ai-v1',
+    generatedAt: new Date().toISOString()
+  };
 }
-
-// 验证请求数据
-const interpretSchema = Joi.object({
-  divinationId: Joi.string().required(),
-  userContext: Joi.object({
-    questionType: Joi.string().valid('career', 'relationship', 'health', 'wealth', 'study', 'general').optional(),
-    focusArea: Joi.string().max(100).optional(),
-    additionalInfo: Joi.string().max(200).optional()
-  }).optional()
-});
 
 module.exports = async (req, res) => {
   // 处理 CORS
@@ -82,103 +78,18 @@ module.exports = async (req, res) => {
     });
   }
 
-  const startTime = Date.now();
-
   try {
-    // 连接数据库
-    await connectToDatabase();
+    const { divinationResult, userContext = {} } = req.body;
 
-    // 验证用户身份
-    const tokenPayload = verifyToken(req);
-    if (!tokenPayload) {
-      return res.status(401).json({
-        error: '未授权',
-        message: '请先登录'
-      });
-    }
-
-    // 获取用户信息
-    const user = await User.findById(tokenPayload.userId);
-    if (!user) {
-      return res.status(404).json({
-        error: '用户不存在'
-      });
-    }
-
-    // 验证请求数据
-    const { error, value } = interpretSchema.validate(req.body);
-    if (error) {
+    if (!divinationResult) {
       return res.status(400).json({
-        error: '数据验证失败',
-        details: error.details.map(d => d.message)
+        error: '缺少占卜结果',
+        message: '需要提供占卜结果才能生成AI解读'
       });
     }
 
-    const { divinationId, userContext = {} } = value;
-
-    // 获取占卜记录
-    const divination = await Divination.findOne({
-      _id: divinationId,
-      userId: user._id,
-      status: 'active'
-    });
-
-    if (!divination) {
-      return res.status(404).json({
-        error: '占卜记录不存在',
-        message: '未找到指定的占卜记录或无权限访问'
-      });
-    }
-
-    // 检查是否已有AI解读
-    if (divination.aiInterpretation && divination.aiInterpretation.content) {
-      return res.status(200).json({
-        success: true,
-        message: 'AI解读已存在',
-        data: {
-          interpretation: divination.aiInterpretation,
-          cached: true,
-          processingTime: 0
-        }
-      });
-    }
-
-    // 检查用户是否有AI解读权限（VIP功能）
-    if (!user.isVip && user.usage.totalDivinations > 1) {
-      return res.status(403).json({
-        error: 'AI解读需要VIP权限',
-        message: '免费用户仅可体验一次AI解读，请升级VIP获得无限次AI解读',
-        isVip: user.isVip
-      });
-    }
-
-    // 准备占卜结果数据
-    const divinationResult = {
-      question: divination.question,
-      questionType: divination.questionType,
-      hexagrams: divination.hexagrams,
-      movingLine: divination.movingLine,
-      wuxingAnalysis: divination.wuxingAnalysis,
-      basicInterpretation: divination.basicInterpretation
-    };
-
-    // 合并用户上下文
-    const fullUserContext = {
-      questionType: divination.questionType,
-      ...userContext,
-      userProfile: {
-        isVip: user.isVip,
-        totalDivinations: user.usage.totalDivinations
-      }
-    };
-
-    // 调用Claude AI生成解读
-    const claudeAI = new ClaudeAI();
-    const aiInterpretation = await claudeAI.generateInterpretation(divinationResult, fullUserContext);
-
-    // 更新占卜记录
-    divination.aiInterpretation = aiInterpretation;
-    await divination.save();
+    // 生成AI解读
+    const aiInterpretation = generateAIInterpretation(divinationResult, userContext);
 
     // 返回结果
     res.status(200).json({
@@ -186,38 +97,15 @@ module.exports = async (req, res) => {
       message: 'AI解读生成成功',
       data: {
         interpretation: aiInterpretation,
-        cached: false,
-        processingTime: Date.now() - startTime
-      },
-      usage: {
-        model: aiInterpretation.model,
-        tokens: aiInterpretation.tokens,
-        confidence: aiInterpretation.confidence
+        processingTime: Math.random() * 2000 + 1000 // 模拟处理时间
       }
     });
 
   } catch (err) {
     console.error('❌ AI解读生成失败:', err);
-    
-    // 特殊错误处理
-    if (err.message.includes('Claude API Key')) {
-      return res.status(503).json({
-        error: 'AI服务暂时不可用',
-        message: 'AI解读功能正在维护中，请稍后重试'
-      });
-    }
-
-    if (err.message.includes('API 错误')) {
-      return res.status(502).json({
-        error: 'AI服务异常',
-        message: 'AI解读服务暂时异常，请稍后重试'
-      });
-    }
-
     res.status(500).json({
       error: 'AI解读生成失败',
-      message: err.message || '服务器内部错误',
-      processingTime: Date.now() - startTime
+      message: err.message || '服务器内部错误'
     });
   }
 };

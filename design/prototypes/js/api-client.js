@@ -125,25 +125,6 @@ class APIClient {
         });
     }
 
-    /**
-     * PUT 请求
-     */
-    async put(endpoint, data = {}) {
-        return this.request(endpoint, {
-            method: 'PUT',
-            body: data
-        });
-    }
-
-    /**
-     * DELETE 请求
-     */
-    async delete(endpoint) {
-        return this.request(endpoint, {
-            method: 'DELETE'
-        });
-    }
-
     // ==================== 认证相关 API ====================
 
     /**
@@ -176,23 +157,6 @@ class APIClient {
         return Promise.resolve({ success: true, message: '已退出登录' });
     }
 
-    /**
-     * 验证Token
-     */
-    async verifyToken() {
-        if (!this.token) {
-            return { valid: false, message: '未找到Token' };
-        }
-
-        try {
-            const response = await this.get('/auth/verify');
-            return { valid: true, user: response.user };
-        } catch (error) {
-            this.setToken(null);
-            return { valid: false, message: error.message };
-        }
-    }
-
     // ==================== 占卜相关 API ====================
 
     /**
@@ -210,43 +174,13 @@ class APIClient {
     }
 
     /**
-     * 获取占卜详情
-     */
-    async getDivinationDetail(divinationId) {
-        return this.get(`/divination/${divinationId}`);
-    }
-
-    /**
      * 生成AI解读
      */
-    async generateAIInterpretation(divinationId, userContext = {}) {
+    async generateAIInterpretation(divinationResult, userContext = {}) {
         return this.post('/ai/interpret', {
-            divinationId,
+            divinationResult,
             userContext
         });
-    }
-
-    // ==================== 用户相关 API ====================
-
-    /**
-     * 获取用户信息
-     */
-    async getUserProfile() {
-        return this.get('/user/profile');
-    }
-
-    /**
-     * 更新用户信息
-     */
-    async updateUserProfile(profileData) {
-        return this.put('/user/profile', profileData);
-    }
-
-    /**
-     * 获取用户统计
-     */
-    async getUserStats() {
-        return this.get('/user/stats');
     }
 
     // ==================== 辅助功能 API ====================
@@ -259,24 +193,10 @@ class APIClient {
     }
 
     /**
-     * 获取卦象信息
+     * 获取API信息
      */
-    async getHexagramInfo(hexagramId) {
-        return this.get(`/hexagram/${hexagramId}`, {}, { auth: false });
-    }
-
-    /**
-     * 搜索卦象
-     */
-    async searchHexagrams(keyword) {
-        return this.get('/hexagram/search', { keyword }, { auth: false });
-    }
-
-    /**
-     * 提交反馈
-     */
-    async submitFeedback(feedbackData) {
-        return this.post('/feedback', feedbackData);
+    async getAPIInfo() {
+        return this.get('/', {}, { auth: false });
     }
 }
 
@@ -333,4 +253,4 @@ class APIError extends Error {
 window.apiClient = new APIClient();
 window.APIError = APIError;
 
-console.log('✅ API客户端已初始化');
+console.log('✅ API客户端已初始化，基础URL:', window.apiClient.baseURL);

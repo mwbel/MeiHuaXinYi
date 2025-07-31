@@ -4,9 +4,6 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
-const Joi = require('joi');
-const jwt = require('jsonwebtoken');
-const User = require('../../models/User');
 
 // MongoDB 连接状态
 let isConnected = false;
@@ -30,6 +27,19 @@ async function connectToDatabase() {
   }
 }
 
+// 简化的用户模型
+const UserSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+  freeCount: { type: Number, default: 3 },
+  totalDivinations: { type: Number, default: 0 },
+  lastLoginAt: { type: Date }
+});
+
+const User = mongoose.models.User || mongoose.model('User', UserSchema);
+
 // CORS 处理
 function enableCors(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -41,25 +51,6 @@ function enableCors(req, res) {
     return true;
   }
   return false;
-}
-
-// 验证登录数据
-const loginSchema = Joi.object({
-  identifier: Joi.string().required(), // 可以是邮箱或用户名
-  password: Joi.string().required()
-});
-
-// 生成 JWT Token
-function generateToken(user) {
-  const payload = {
-    userId: user._id,
-    username: user.username,
-    email: user.email
-  };
-  
-  return jwt.sign(payload, process.env.JWT_SECRET || 'meihua_secret_key', {
-    expiresIn: '7d'
-  });
 }
 
 module.exports = async (req, res) => {
@@ -78,19 +69,24 @@ module.exports = async (req, res) => {
     // 连接数据库
     await connectToDatabase();
 
-    // 验证请求数据
-    const { error, value } = loginSchema.validate(req.body);
-    if (error) {
+    const { identifier, password } = req.body;
+
+    // 基础验证
+    if (!identifier || !password) {
       return res.status(400).json({
-        error: '数据验证失败',
-        details: error.details.map(d => d.message)
+        error: '缺少必要字段',
+        message: '用户名/邮箱和密码都是必需的'
       });
     }
 
-    const { identifier, password } = value;
+    // 查找用户（可以用邮箱或用户名登录）
+    const user = await User.findOne({
+      $or: [
+        { email: identifier },
+        { username: identifier }
+      ]
+    });
 
-    // 查找用户
-    const user = await User.findByEmailOrUsername(identifier);
     if (!user) {
       return res.status(401).json({
         error: '登录失败',
@@ -98,17 +94,8 @@ module.exports = async (req, res) => {
       });
     }
 
-    // 检查账户状态
-    if (user.status !== 'active') {
-      return res.status(403).json({
-        error: '账户被禁用',
-        message: '您的账户已被暂停，请联系客服'
-      });
-    }
-
-    // 验证密码
-    const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid) {
+    // 验证密码（注意：在生产环境中应该使用加密密码比较）
+    if (user.password !== password) {
       return res.status(401).json({
         error: '登录失败',
         message: '用户名或密码错误'
@@ -116,21 +103,25 @@ module.exports = async (req, res) => {
     }
 
     // 更新登录时间
-    await user.updateLastLogin();
+    user.lastLoginAt = new Date();
+    await user.save();
 
-    // 生成 Token
-    const token = generateToken(user);
+    // 生成简单的token（实际应用中应该使用JWT）
+    const token = `token_${user._id}_${Date.now()}`;
 
     // 返回成功响应
-    const userResponse = user.toSafeObject();
-
     res.status(200).json({
       success: true,
       message: '登录成功',
       token,
-      user: userResponse,
-      expiresIn: '7d',
-      timestamp: new Date().toISOString()
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        freeCount: user.freeCount,
+        totalDivinations: user.totalDivinations,
+        lastLoginAt: user.lastLoginAt
+      }
     });
 
   } catch (err) {

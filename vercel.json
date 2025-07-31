@@ -7,10 +7,6 @@
       "use": "@vercel/node"
     },
     {
-      "src": "public/**",
-      "use": "@vercel/static"
-    },
-    {
       "src": "design/prototypes/**",
       "use": "@vercel/static"
     }
@@ -66,7 +62,7 @@
     },
     {
       "src": "/",
-      "dest": "/index.html"
+      "dest": "/design/prototypes/index.html"
     }
   ],
   "functions": {

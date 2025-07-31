@@ -1,6 +1,9 @@
+/**
+ * 主API入口
+ */
+
 require('dotenv').config();
 const mongoose = require('mongoose');
-const cors = require('cors');
 
 // MongoDB 连接状态
 let isConnected = false;
@@ -51,43 +54,55 @@ module.exports = async (req, res) => {
     const { method, url } = req;
     const path = url.split('?')[0];
 
-    // 健康检查
-    if (method === 'GET' && path === '/') {
+    // API信息
+    if (method === 'GET' && (path === '/' || path === '')) {
       return res.status(200).json({
-        message: '梅花心易 API 服务正常运行',
+        name: '梅花心易 API',
         version: '2.0.0',
-        timestamp: new Date().toISOString(),
-        endpoints: [
-          'GET /health - 健康检查',
-          'POST /divination - 执行占卜',
-          'GET /divination/history - 占卜历史',
-          'POST /auth/register - 用户注册',
-          'POST /auth/login - 用户登录'
-        ]
-      });
-    }
-
-    // 健康检查端点
-    if (method === 'GET' && path === '/health') {
-      return res.status(200).json({
-        status: 'healthy',
+        description: '基于正宗梅花易数算法的AI智能占卜决策助手',
+        status: 'running',
         database: 'connected',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        endpoints: {
+          health: 'GET /api/health - 健康检查',
+          auth: {
+            register: 'POST /api/auth/register - 用户注册',
+            login: 'POST /api/auth/login - 用户登录'
+          },
+          divination: {
+            perform: 'POST /api/divination/perform - 执行占卜',
+            history: 'GET /api/divination/history - 占卜历史'
+          },
+          ai: {
+            interpret: 'POST /api/ai/interpret - AI智能解读'
+          }
+        },
+        documentation: 'https://mei-hua-xin-yi.vercel.app/api'
       });
     }
 
     // 404 处理
     res.status(404).json({
       error: 'API 端点未找到',
+      message: '请检查请求路径和方法',
       path: path,
       method: method,
+      availableEndpoints: [
+        '/api/health',
+        '/api/auth/register',
+        '/api/auth/login',
+        '/api/divination/perform',
+        '/api/divination/history',
+        '/api/ai/interpret'
+      ],
       timestamp: new Date().toISOString()
     });
 
   } catch (err) {
     console.error('❌ API 错误:', err);
     res.status(500).json({
-      error: err.message,
+      error: 'API服务异常',
+      message: err.message,
       timestamp: new Date().toISOString()
     });
   }

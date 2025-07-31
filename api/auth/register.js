@@ -4,8 +4,6 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
-const Joi = require('joi');
-const User = require('../../models/User');
 
 // MongoDB 连接状态
 let isConnected = false;
@@ -29,6 +27,18 @@ async function connectToDatabase() {
   }
 }
 
+// 简化的用户模型
+const UserSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+  freeCount: { type: Number, default: 3 },
+  totalDivinations: { type: Number, default: 0 }
+});
+
+const User = mongoose.models.User || mongoose.model('User', UserSchema);
+
 // CORS 处理
 function enableCors(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -41,23 +51,6 @@ function enableCors(req, res) {
   }
   return false;
 }
-
-// 验证注册数据
-const registerSchema = Joi.object({
-  username: Joi.string().alphanum().min(3).max(20).required(),
-  email: Joi.string().email().required(),
-  password: Joi.string().min(6).required(),
-  nickname: Joi.string().max(30).optional(),
-  profile: Joi.object({
-    gender: Joi.string().valid('male', 'female', 'other').optional(),
-    birthDate: Joi.date().optional(),
-    location: Joi.object({
-      city: Joi.string().optional(),
-      province: Joi.string().optional(),
-      country: Joi.string().optional()
-    }).optional()
-  }).optional()
-});
 
 module.exports = async (req, res) => {
   // 处理 CORS
@@ -75,20 +68,27 @@ module.exports = async (req, res) => {
     // 连接数据库
     await connectToDatabase();
 
-    // 验证请求数据
-    const { error, value } = registerSchema.validate(req.body);
-    if (error) {
+    const { username, email, password } = req.body;
+
+    // 基础验证
+    if (!username || !email || !password) {
       return res.status(400).json({
-        error: '数据验证失败',
-        details: error.details.map(d => d.message)
+        error: '缺少必要字段',
+        message: '用户名、邮箱和密码都是必需的'
       });
     }
 
-    const { username, email, password, nickname, profile } = value;
+    if (password.length < 6) {
+      return res.status(400).json({
+        error: '密码太短',
+        message: '密码至少需要6个字符'
+      });
+    }
 
     // 检查用户是否已存在
-    const existingUser = await User.findByEmailOrUsername(email) || 
-                         await User.findByEmailOrUsername(username);
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }]
+    });
     
     if (existingUser) {
       return res.status(409).json({
@@ -97,25 +97,26 @@ module.exports = async (req, res) => {
       });
     }
 
-    // 创建新用户
+    // 创建新用户（注意：在生产环境中应该加密密码）
     const newUser = new User({
       username,
       email,
-      password,
-      nickname: nickname || username,
-      profile: profile || {}
+      password // 实际应用中需要使用 bcrypt 加密
     });
 
     await newUser.save();
 
     // 返回成功响应（不包含密码）
-    const userResponse = newUser.toSafeObject();
-
     res.status(201).json({
       success: true,
       message: '注册成功',
-      user: userResponse,
-      timestamp: new Date().toISOString()
+      user: {
+        id: newUser._id,
+        username: newUser.username,
+        email: newUser.email,
+        freeCount: newUser.freeCount,
+        createdAt: newUser.createdAt
+      }
     });
 
   } catch (err) {

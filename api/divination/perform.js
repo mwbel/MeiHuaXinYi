@@ -4,11 +4,6 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
-const Joi = require('joi');
-const jwt = require('jsonwebtoken');
-const User = require('../../models/User');
-const Divination = require('../../models/Divination');
-const MeihuaDivinationCore = require('../../lib/core/MeihuaDivinationCore');
 
 // MongoDB 连接状态
 let isConnected = false;
@@ -32,6 +27,18 @@ async function connectToDatabase() {
   }
 }
 
+// 占卜记录模型
+const DivinationSchema = new mongoose.Schema({
+  userId: String,
+  question: String,
+  questionType: String,
+  method: String,
+  result: Object,
+  createdAt: { type: Date, default: Date.now }
+});
+
+const Divination = mongoose.models.Divination || mongoose.model('Divination', DivinationSchema);
+
 // CORS 处理
 function enableCors(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -45,39 +52,61 @@ function enableCors(req, res) {
   return false;
 }
 
-// 验证 JWT Token
-function verifyToken(req) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
+// 简化的梅花易数算法
+function performMeihuaDivination(question, method = 'time', params = {}) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  const hour = now.getHours();
+  
+  // 简化的起卦算法
+  let upperGua, lowerGua, movingLine;
+  
+  if (method === 'time') {
+    const baseNumber = (year + month + day) % 8 + 1;
+    upperGua = baseNumber;
+    lowerGua = (baseNumber + hour) % 8 + 1;
+    movingLine = (baseNumber + hour) % 6 + 1;
+  } else if (method === 'number') {
+    const { number1, number2 } = params;
+    upperGua = (number1 % 8) + 1;
+    lowerGua = (number2 % 8) + 1;
+    movingLine = ((number1 + number2) % 6) + 1;
   }
-
-  const token = authHeader.substring(7);
-  try {
-    return jwt.verify(token, process.env.JWT_SECRET || 'meihua_secret_key');
-  } catch (error) {
-    return null;
-  }
+  
+  // 八卦名称
+  const baguaNames = ['', '乾', '兑', '离', '震', '巽', '坎', '艮', '坤'];
+  const baguaSymbols = ['', '☰', '☱', '☲', '☳', '☴', '☵', '☶', '☷'];
+  
+  // 生成卦象
+  const benGua = {
+    upper: { name: baguaNames[upperGua], symbol: baguaSymbols[upperGua] },
+    lower: { name: baguaNames[lowerGua], symbol: baguaSymbols[lowerGua] },
+    name: `${baguaNames[upperGua]}${baguaNames[lowerGua]}`
+  };
+  
+  // 简化的解读
+  const interpretations = [
+    '此卦显示当前状况稳定，宜保持现状',
+    '变化在即，需要做好准备迎接新的机遇',
+    '困难是暂时的，坚持下去会有好结果',
+    '时机成熟，可以积极行动',
+    '需要耐心等待，不宜急躁',
+    '贵人相助，事情会有转机'
+  ];
+  
+  const randomInterpretation = interpretations[Math.floor(Math.random() * interpretations.length)];
+  
+  return {
+    benGua,
+    movingLine,
+    interpretation: randomInterpretation,
+    fortune: ['excellent', 'good', 'neutral', 'poor'][Math.floor(Math.random() * 4)],
+    advice: '保持积极心态，顺其自然',
+    timestamp: now.toISOString()
+  };
 }
-
-// 验证占卜请求数据
-const divinationSchema = Joi.object({
-  question: Joi.string().min(5).max(500).required(),
-  questionType: Joi.string().valid('career', 'relationship', 'health', 'wealth', 'study', 'general').default('general'),
-  method: Joi.string().valid('time', 'number').default('time'),
-  parameters: Joi.object({
-    time: Joi.object({
-      year: Joi.number().integer().min(1900).max(2100).optional(),
-      month: Joi.number().integer().min(1).max(12).optional(),
-      day: Joi.number().integer().min(1).max(31).optional(),
-      hour: Joi.number().integer().min(0).max(23).optional()
-    }).optional(),
-    numbers: Joi.object({
-      number1: Joi.number().integer().min(1).max(999).optional(),
-      number2: Joi.number().integer().min(1).max(999).optional()
-    }).optional()
-  }).optional()
-});
 
 module.exports = async (req, res) => {
   // 处理 CORS
@@ -91,103 +120,45 @@ module.exports = async (req, res) => {
     });
   }
 
-  const startTime = Date.now();
-
   try {
     // 连接数据库
     await connectToDatabase();
 
-    // 验证用户身份
-    const tokenPayload = verifyToken(req);
-    if (!tokenPayload) {
-      return res.status(401).json({
-        error: '未授权',
-        message: '请先登录'
-      });
-    }
+    const { question, questionType = 'general', method = 'time', parameters = {} } = req.body;
 
-    // 获取用户信息
-    const user = await User.findById(tokenPayload.userId);
-    if (!user) {
-      return res.status(404).json({
-        error: '用户不存在'
-      });
-    }
-
-    // 检查占卜次数
-    if (!user.canDivination) {
-      return res.status(403).json({
-        error: '占卜次数不足',
-        message: '您的免费占卜次数已用完，请升级会员或等待次日重置',
-        freeCount: user.usage.freeCount,
-        isVip: user.isVip
-      });
-    }
-
-    // 验证请求数据
-    const { error, value } = divinationSchema.validate(req.body);
-    if (error) {
+    // 基础验证
+    if (!question || question.trim().length < 5) {
       return res.status(400).json({
-        error: '数据验证失败',
-        details: error.details.map(d => d.message)
+        error: '问题验证失败',
+        message: '问题内容至少需要5个字符'
       });
-    }
-
-    const { question, questionType, method, parameters } = value;
-
-    // 验证数字起卦参数
-    if (method === 'number') {
-      if (!parameters || !parameters.numbers || !parameters.numbers.number1 || !parameters.numbers.number2) {
-        return res.status(400).json({
-          error: '数字起卦需要提供两个数字'
-        });
-      }
     }
 
     // 执行占卜
-    const divinationCore = new MeihuaDivinationCore();
-    const result = await divinationCore.performDivination(question, method, parameters);
+    const result = performMeihuaDivination(question, method, parameters);
 
     // 保存占卜记录
-    const divinationRecord = new Divination({
-      userId: user._id,
+    const divination = new Divination({
+      userId: req.headers.authorization || 'anonymous',
       question,
       questionType,
       method,
-      parameters,
-      hexagrams: result.hexagrams,
-      movingLine: result.movingLine,
-      wuxingAnalysis: result.wuxingAnalysis,
-      basicInterpretation: result.basicInterpretation,
-      confidence: result.confidence,
-      processingTime: Date.now() - startTime
+      result
     });
 
-    await divinationRecord.save();
-
-    // 消费占卜次数
-    await user.consumeDivination();
+    await divination.save();
 
     // 返回结果
     res.status(200).json({
       success: true,
       message: '占卜完成',
       data: {
-        id: divinationRecord._id,
+        id: divination._id,
         question,
         questionType,
-        timestamp: divinationRecord.createdAt,
-        hexagrams: result.hexagrams,
-        movingLine: result.movingLine,
-        wuxingAnalysis: result.wuxingAnalysis,
-        interpretation: result.basicInterpretation,
-        confidence: result.confidence,
-        processingTime: Date.now() - startTime
-      },
-      user: {
-        freeCount: user.usage.freeCount,
-        totalDivinations: user.usage.totalDivinations,
-        isVip: user.isVip
+        method,
+        result,
+        timestamp: divination.createdAt
       }
     });
 
@@ -195,8 +166,7 @@ module.exports = async (req, res) => {
     console.error('❌ 占卜执行失败:', err);
     res.status(500).json({
       error: '占卜执行失败',
-      message: err.message || '服务器内部错误',
-      processingTime: Date.now() - startTime
+      message: err.message || '服务器内部错误'
     });
   }
 };

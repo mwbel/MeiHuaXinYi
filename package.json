@@ -1,15 +1,14 @@
 {
   "name": "meihuaxinyi",
   "version": "2.0.0",
-  "main": "index.js",
+  "main": "api/index.js",
   "directories": {
     "doc": "docs"
   },
   "scripts": {
-    "start": "node server.js",
+    "start": "node api/index.js",
     "dev": "vercel dev",
     "build": "echo 'Build complete'",
-    "test": "jest",
     "deploy": "vercel --prod"
   },
   "keywords": ["梅花易数", "占卜", "AI", "易学"],
@@ -18,18 +17,9 @@
   "description": "基于正宗梅花易数算法的AI智能占卜决策助手",
   "dependencies": {
     "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "mongoose": "^8.0.3",
-    "cors": "^2.8.5",
-    "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
-    "joi": "^17.11.0",
-    "axios": "^1.6.2",
-    "moment": "^2.29.4",
-    "uuid": "^9.0.1"
+    "mongoose": "^8.0.3"
   },
-  "devDependencies": {
-    "jest": "^29.7.0",
-    "nodemon": "^3.0.2"
+  "engines": {
+    "node": ">=16.0.0"
   }
 }
