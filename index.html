@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>梅花心易 - AI智能占卜决策助手</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding: 40px 0;
+        }
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+        .title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+        .status-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+            backdrop-filter: blur(10px);
+        }
+        .success-badge {
+            background: #10b981;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .feature-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+        }
+        .btn {
+            background: #fbbf24;
+            color: #1e3a8a;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: #f59e0b;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .api-test {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            display: none;
+        }
+        .code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <div class="logo floating">☯️</div>
+            <h1 class="title">梅花心易</h1>
+            <p class="subtitle">基于正宗梅花易数算法的AI智能占卜决策助手</p>
+
+            <div>
+                <button class="btn" onclick="testAPI()">🔧 测试API</button>
+                <button class="btn btn-secondary" onclick="showFullApp()">✨ 完整版本</button>
+            </div>
+        </div>
+
+        <!-- 状态卡片 -->
+        <div class="status-card">
+            <div class="success-badge">🎉 部署成功！</div>
+            <h2 style="font-size: 1.8rem; margin-bottom: 20px;">梅花心易项目已完整部署</h2>
+
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <h3 style="font-size: 1.2rem; margin-bottom: 15px;">✅ 已完成功能</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li>• 梅花易数核心算法</li>
+                        <li>• 用户认证系统</li>
+                        <li>• 占卜执行API</li>
+                        <li>• AI智能解读</li>
+                        <li>• 数据库集成</li>
+                        <li>• 前端界面</li>
+                    </ul>
+                </div>
+                <div class="feature-item">
+                    <h3 style="font-size: 1.2rem; margin-bottom: 15px;">🔗 可用端点</h3>
+                    <ul style="list-style: none; padding: 0; font-family: monospace; font-size: 0.9rem;">
+                        <li>• /api/health</li>
+                        <li>• /api/auth/register</li>
+                        <li>• /api/auth/login</li>
+                        <li>• /api/divination/perform</li>
+                        <li>• /api/divination/history</li>
+                        <li>• /api/ai/interpret</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- API测试结果 -->
+        <div id="apiTestResult" class="api-test">
+            <h3 style="font-size: 1.5rem; margin-bottom: 20px;">API测试结果</h3>
+            <div id="testContent"></div>
+        </div>
+
+        <!-- 功能特色 -->
+        <div class="feature-grid">
+            <div class="feature-item">
+                <div style="font-size: 2rem; margin-bottom: 15px;">🧠</div>
+                <h3 style="font-size: 1.2rem; margin-bottom: 10px;">AI智能解读</h3>
+                <p>结合传统易学与现代AI技术，提供个性化解读</p>
+            </div>
+            <div class="feature-item">
+                <div style="font-size: 2rem; margin-bottom: 15px;">📱</div>
+                <h3 style="font-size: 1.2rem; margin-bottom: 10px;">移动优先</h3>
+                <p>完美适配手机、平板、桌面设备</p>
+            </div>
+            <div class="feature-item">
+                <div style="font-size: 2rem; margin-bottom: 15px;">🎁</div>
+                <h3 style="font-size: 1.2rem; margin-bottom: 10px;">免费体验</h3>
+                <p>每日免费3次占卜，VIP享受无限次数</p>
+            </div>
+        </div>
+
+        <!-- 使用说明 -->
+        <div class="status-card">
+            <h2 style="font-size: 1.8rem; margin-bottom: 30px; text-align: center;">如何使用</h2>
+            <div class="feature-grid">
+                <div style="text-align: center;">
+                    <div style="background: rgba(255,255,255,0.2); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-weight: bold; font-size: 1.2rem;">1</div>
+                    <h3 style="margin-bottom: 10px;">注册账户</h3>
+                    <p style="opacity: 0.8;">创建您的专属账户</p>
+                </div>
+                <div style="text-align: center;">
+                    <div style="background: rgba(255,255,255,0.2); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-weight: bold; font-size: 1.2rem;">2</div>
+                    <h3 style="margin-bottom: 10px;">提出问题</h3>
+                    <p style="opacity: 0.8;">输入您想要占卜的问题</p>
+                </div>
+                <div style="text-align: center;">
+                    <div style="background: rgba(255,255,255,0.2); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-weight: bold; font-size: 1.2rem;">3</div>
+                    <h3 style="margin-bottom: 10px;">获得解读</h3>
+                    <p style="opacity: 0.8;">查看专业的占卜结果</p>
+                </div>
+                <div style="text-align: center;">
+                    <div style="background: rgba(255,255,255,0.2); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-weight: bold; font-size: 1.2rem;">4</div>
+                    <h3 style="margin-bottom: 10px;">AI分析</h3>
+                    <p style="opacity: 0.8;">获取AI智能解读建议</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <div style="text-align: center; padding: 40px 20px; opacity: 0.8;">
+        <p>&copy; 2024 梅花心易. 让古老智慧与现代AI完美结合</p>
+        <p style="margin-top: 10px; font-size: 0.9rem;">
+            <a href="https://github.com/your-username/MeiHuaXinYi" style="color: #fbbf24; text-decoration: underline;">GitHub</a> |
+            <a href="/api" style="color: #fbbf24; text-decoration: underline;">API文档</a>
+        </p>
+    </div>
+
+    <script>
+        // API测试功能
+        async function testAPI() {
+            const resultDiv = document.getElementById('apiTestResult');
+            const contentDiv = document.getElementById('testContent');
+
+            resultDiv.style.display = 'block';
+            contentDiv.innerHTML = '<div style="text-align: center; padding: 20px;"><div style="font-size: 2rem;">⏳</div><p>正在测试API连接...</p></div>';
+
+            const tests = [
+                { name: '健康检查', url: '/api/health', method: 'GET' },
+                { name: 'API信息', url: '/api', method: 'GET' }
+            ];
+
+            let results = [];
+
+            for (const test of tests) {
+                try {
+                    const response = await fetch(test.url, { method: test.method });
+                    const data = await response.json();
+                    results.push({
+                        name: test.name,
+                        status: response.ok ? 'success' : 'error',
+                        data: data
+                    });
+                } catch (error) {
+                    results.push({
+                        name: test.name,
+                        status: 'error',
+                        error: error.message
+                    });
+                }
+            }
+
+            // 显示结果
+            contentDiv.innerHTML = results.map(result => `
+                <div style="background: rgba(255,255,255,0.1); border-radius: 10px; padding: 20px; margin: 15px 0;">
+                    <div style="margin-bottom: 15px;">
+                        <span style="font-size: 1.5rem;">${result.status === 'success' ? '✅' : '❌'}</span>
+                        <strong style="margin-left: 10px;">${result.name}</strong>
+                    </div>
+                    <div class="code">${JSON.stringify(result.data || result.error, null, 2)}</div>
+                </div>
+            `).join('');
+        }
+
+        // 跳转到完整应用
+        function showFullApp() {
+            window.location.href = '/design/prototypes/index.html';
+        }
+
+        // 页面加载完成后自动测试API
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('梅花心易应用已加载');
+            console.log('当前URL:', window.location.href);
+            console.log('API基础URL:', window.location.origin + '/api');
+        });
+    </script>
+</body>
+</html>

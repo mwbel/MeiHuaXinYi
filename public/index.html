@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>梅花心易 - AI智能占卜决策助手</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+        }
+        .floating-element {
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- 导航栏 -->
+    <nav class="gradient-bg text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-xl font-bold">梅花心易</h1>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="loginBtn" class="bg-white text-blue-900 px-4 py-2 rounded-lg hover:bg-gray-100 transition">
+                        登录
+                    </button>
+                    <button id="registerBtn" class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition">
+                        注册
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- 欢迎区域 -->
+        <div class="text-center mb-12">
+            <div class="floating-element mb-8">
+                <i class="fas fa-yin-yang text-6xl text-blue-900 mb-4"></i>
+            </div>
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">
+                梅花心易
+            </h1>
+            <p class="text-xl text-gray-600 mb-8">
+                基于正宗梅花易数算法的AI智能占卜决策助手
+            </p>
+            <div class="flex justify-center space-x-4">
+                <button id="startDivinationBtn" class="bg-blue-900 text-white px-8 py-3 rounded-lg text-lg hover:bg-blue-800 transition">
+                    <i class="fas fa-magic mr-2"></i>
+                    开始占卜
+                </button>
+                <button id="viewHistoryBtn" class="bg-gray-600 text-white px-8 py-3 rounded-lg text-lg hover:bg-gray-700 transition">
+                    <i class="fas fa-history mr-2"></i>
+                    查看历史
+                </button>
+            </div>
+        </div>
+
+        <!-- 功能特色 -->
+        <div class="grid md:grid-cols-3 gap-8 mb-12">
+            <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+                <i class="fas fa-brain text-3xl text-blue-900 mb-4"></i>
+                <h3 class="text-xl font-semibold mb-2">AI智能解读</h3>
+                <p class="text-gray-600">结合传统易学与现代AI技术，提供个性化解读</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+                <i class="fas fa-mobile-alt text-3xl text-blue-900 mb-4"></i>
+                <h3 class="text-xl font-semibold mb-2">移动优先</h3>
+                <p class="text-gray-600">完美适配手机、平板、桌面设备</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+                <i class="fas fa-gift text-3xl text-blue-900 mb-4"></i>
+                <h3 class="text-xl font-semibold mb-2">免费体验</h3>
+                <p class="text-gray-600">每日免费3次占卜，VIP享受无限次数</p>
+            </div>
+        </div>
+
+        <!-- 占卜表单 -->
+        <div id="divinationForm" class="bg-white rounded-lg shadow-lg p-8 max-w-2xl mx-auto" style="display: none;">
+            <h2 class="text-2xl font-bold text-center mb-6">开始您的占卜</h2>
+            
+            <form id="questionForm">
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        请输入您的问题
+                    </label>
+                    <textarea 
+                        id="questionInput" 
+                        rows="3" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="例如：我的事业发展如何？我和某某的感情会怎样？"
+                        required
+                    ></textarea>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        问题类型
+                    </label>
+                    <select id="questionType" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="general">综合运势</option>
+                        <option value="career">事业发展</option>
+                        <option value="relationship">感情婚姻</option>
+                        <option value="health">健康状况</option>
+                        <option value="wealth">财运投资</option>
+                        <option value="study">学业考试</option>
+                    </select>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        起卦方式
+                    </label>
+                    <div class="flex space-x-4">
+                        <label class="flex items-center">
+                            <input type="radio" name="method" value="time" checked class="mr-2">
+                            时间起卦（推荐）
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="method" value="number" class="mr-2">
+                            数字起卦
+                        </label>
+                    </div>
+                </div>
+
+                <div id="numberInputs" class="mb-6" style="display: none;">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">第一个数字</label>
+                            <input type="number" id="number1" min="1" max="999" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">第二个数字</label>
+                            <input type="number" id="number2" min="1" max="999" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <button type="submit" class="bg-blue-900 text-white px-8 py-3 rounded-lg text-lg hover:bg-blue-800 transition">
+                        <i class="fas fa-magic mr-2"></i>
+                        开始占卜
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 结果显示区域 -->
+        <div id="resultArea" class="mt-8" style="display: none;">
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-center mb-6">占卜结果</h2>
+                <div id="resultContent"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="gradient-bg text-white py-8 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p>&copy; 2024 梅花心易. 让古老智慧与现代AI完美结合</p>
+        </div>
+    </footer>
+
+    <script>
+        // 基础功能
+        document.addEventListener('DOMContentLoaded', function() {
+            // 显示占卜表单
+            document.getElementById('startDivinationBtn').addEventListener('click', function() {
+                document.getElementById('divinationForm').style.display = 'block';
+                document.getElementById('divinationForm').scrollIntoView({ behavior: 'smooth' });
+            });
+
+            // 切换起卦方式
+            document.querySelectorAll('input[name="method"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const numberInputs = document.getElementById('numberInputs');
+                    if (this.value === 'number') {
+                        numberInputs.style.display = 'block';
+                    } else {
+                        numberInputs.style.display = 'none';
+                    }
+                });
+            });
+
+            // 表单提交
+            document.getElementById('questionForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const question = document.getElementById('questionInput').value;
+                const questionType = document.getElementById('questionType').value;
+                const method = document.querySelector('input[name="method"]:checked').value;
+                
+                if (!question.trim()) {
+                    alert('请输入您的问题');
+                    return;
+                }
+
+                // 显示加载状态
+                const resultArea = document.getElementById('resultArea');
+                const resultContent = document.getElementById('resultContent');
+                
+                resultContent.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-spinner fa-spin text-4xl text-blue-900 mb-4"></i>
+                        <p class="text-lg">正在为您占卜，请稍候...</p>
+                    </div>
+                `;
+                resultArea.style.display = 'block';
+                resultArea.scrollIntoView({ behavior: 'smooth' });
+
+                // 模拟占卜结果（实际应用中会调用API）
+                setTimeout(() => {
+                    resultContent.innerHTML = `
+                        <div class="space-y-6">
+                            <div class="text-center">
+                                <h3 class="text-xl font-semibold mb-2">您的问题：${question}</h3>
+                                <p class="text-gray-600">问题类型：${getQuestionTypeName(questionType)}</p>
+                                <p class="text-gray-600">起卦方式：${method === 'time' ? '时间起卦' : '数字起卦'}</p>
+                            </div>
+                            
+                            <div class="grid md:grid-cols-3 gap-4">
+                                <div class="bg-blue-50 p-4 rounded-lg text-center">
+                                    <h4 class="font-semibold text-blue-900">本卦</h4>
+                                    <div class="text-2xl my-2">☰☷</div>
+                                    <p class="text-sm">天地否</p>
+                                </div>
+                                <div class="bg-yellow-50 p-4 rounded-lg text-center">
+                                    <h4 class="font-semibold text-yellow-900">互卦</h4>
+                                    <div class="text-2xl my-2">☳☶</div>
+                                    <p class="text-sm">雷山小过</p>
+                                </div>
+                                <div class="bg-green-50 p-4 rounded-lg text-center">
+                                    <h4 class="font-semibold text-green-900">变卦</h4>
+                                    <div class="text-2xl my-2">☰☳</div>
+                                    <p class="text-sm">天雷无妄</p>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-50 p-6 rounded-lg">
+                                <h4 class="font-semibold mb-3">基础解读</h4>
+                                <p class="text-gray-700 leading-relaxed">
+                                    本卦天地否，表示当前状况可能遇到一些阻碍，但这是暂时的。
+                                    互卦雷山小过，提示在处理问题时要谨慎小心，不宜过于激进。
+                                    变卦天雷无妄，预示着只要保持真诚和正道，最终会有好的结果。
+                                </p>
+                            </div>
+                            
+                            <div class="text-center">
+                                <button class="bg-yellow-500 text-white px-6 py-2 rounded-lg hover:bg-yellow-600 transition">
+                                    <i class="fas fa-robot mr-2"></i>
+                                    获取AI详细解读（VIP功能）
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }, 2000);
+            });
+
+            // 登录按钮
+            document.getElementById('loginBtn').addEventListener('click', function() {
+                alert('登录功能开发中，敬请期待！');
+            });
+
+            // 注册按钮
+            document.getElementById('registerBtn').addEventListener('click', function() {
+                alert('注册功能开发中，敬请期待！');
+            });
+
+            // 查看历史按钮
+            document.getElementById('viewHistoryBtn').addEventListener('click', function() {
+                alert('历史记录功能开发中，敬请期待！');
+            });
+        });
+
+        function getQuestionTypeName(type) {
+            const names = {
+                'general': '综合运势',
+                'career': '事业发展',
+                'relationship': '感情婚姻',
+                'health': '健康状况',
+                'wealth': '财运投资',
+                'study': '学业考试'
+            };
+            return names[type] || '综合运势';
+        }
+    </script>
+</body>
+</html>

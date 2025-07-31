@@ -1,19 +1,80 @@
 {
   "version": 2,
+  "name": "meihuaxinyi",
   "builds": [
     {
       "src": "api/**/*.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "public/**",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "design/prototypes/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
+      "src": "/api/health",
+      "dest": "/api/health.js"
     },
     {
-      "src": "/(.*)",
+      "src": "/api/auth/register",
+      "dest": "/api/auth/register.js"
+    },
+    {
+      "src": "/api/auth/login",
+      "dest": "/api/auth/login.js"
+    },
+    {
+      "src": "/api/divination/perform",
+      "dest": "/api/divination/perform.js"
+    },
+    {
+      "src": "/api/divination/history",
+      "dest": "/api/divination/history.js"
+    },
+    {
+      "src": "/api/ai/interpret",
+      "dest": "/api/ai/interpret.js"
+    },
+    {
+      "src": "/api/test",
+      "dest": "/api/test.js"
+    },
+    {
+      "src": "/api$",
       "dest": "/api/index.js"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/js/(.*)",
+      "dest": "/design/prototypes/js/$1"
+    },
+    {
+      "src": "/css/(.*)",
+      "dest": "/design/prototypes/css/$1"
+    },
+    {
+      "src": "/(.*\\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|html))",
+      "dest": "/design/prototypes/$1"
+    },
+    {
+      "src": "/",
+      "dest": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "NODE_ENV": "production"
+  }
 }
